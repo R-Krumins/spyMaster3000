@@ -326,12 +326,12 @@ Block invCipher(Block state, int Nr, Block* w) {
   // Pre-round
 	dbg(state, "pre-round before");
 	dbg(w[0], "pre-round w");
-  addRoundKey(state, w[0]);
+  addRoundKey(state, w[Nr]);
 	dbg(state, "pre-round after");
 
 
   // Round 0 to Nr-1
-  for (int round = Nr-1; round >= 0; round--) {
+  for (int round = Nr - 1; round > 0; round--) {
 	std::cout << "---------------------------\n";
 	std::string msg = "Round " + std::to_string(round) + " start";
 	dbg(state, msg.c_str());
@@ -345,6 +345,7 @@ Block invCipher(Block state, int Nr, Block* w) {
 
     addRoundKey(state, w[round]);
 	dbg(w[round], "Round Key Value");
+	dbg(state, "After mix with key");
 
     invMixColumns(state);
 	dbg(state, "After MixColumns");
@@ -363,8 +364,8 @@ Block invCipher(Block state, int Nr, Block* w) {
 	dbg(state, "After Inv Subytes");
 
 
-	addRoundKey(state, w[Nr]);
-	dbg(w[Nr], "Round Key Value");
+	addRoundKey(state, w[0]);
+	dbg(w[0], "Round Key Value");
   return state;
 };
 
@@ -418,7 +419,7 @@ int main() {
 	dbg(key, "key");
 
 	Block* w = keyExpansion(key, 10, 4);
-	Block encrypted = cipher(input, 10, w);
+	Block encrypted = invCipher(input, 10, w);
 
 	dbg(encrypted, "RESULT");
 	dbg_word(w[1].rows[0]);
