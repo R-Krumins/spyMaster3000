@@ -3,6 +3,7 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <ostream>
 #include <string>
 #include <sys/types.h>
 
@@ -27,33 +28,47 @@ const uint8_t SBOX[16][16] = {
 	{0x76, 0xc0, 0x15, 0x75, 0x84, 0xcf, 0xa8, 0xd2, 0x73, 0xdb, 0x79, 0x08, 0x8a, 0x9e, 0xdf, 0x16}
 };
 
-const uint32_t RCON[] = {
-	0x01000000, 0x20000000,
-	0x02000000, 0x40000000,
-	0x04000000, 0x80000000,
-	0x08000000, 0x1b000000,
-	0x10000000, 0x36000000
+// must be loaded into memory as indivual bytes becuse
+// of x86 GOD DAMN ENDIAN FLIPPING
+const uint8_t RCON[] = {
+	0x01, 0x00, 0x00, 0x00, 
+	0x20, 0x00, 0x00, 0x00,
+	0x02, 0x00, 0x00, 0x00, 
+	0x40, 0x00, 0x00, 0x00,
+	0x04, 0x00, 0x00, 0x00, 
+	0x80, 0x00, 0x00, 0x00,
+	0x08, 0x00, 0x00, 0x00, 
+	0x1b, 0x00, 0x00, 0x00,
+	0x10, 0x00, 0x00, 0x00, 
+	0x36, 0x00, 0x00, 0x00
 };
 
 union Block {
-  uint8_t matrix[4][4];
-  uint8_t bytes[16];
-  uint32_t rows[4];
+	uint8_t matrix[4][4];
+	uint8_t bytes[16];
+	uint32_t rows[4];
+		
+	uint32_t getCol(int c) {
+		uint32_t col = 0;
+		for(int r = 0; r < 4; r++)
+			col |= this->matrix[r][c] << (8*r);
+		return col;
+	}
 
-  Block(std::string text) {
-    assert(text.length() == 16);
-    std::memcpy(this, text.data(), 16);
-  }
+	Block(std::string text) {
+		assert(text.length() == 16);
+		std::memcpy(this, text.data(), 16);
+	}
 
-  Block(uint8_t* bytes) {
-	for (int c = 0; c < 4; c++) {
-		for (int r = 0; r < 4; r++) {
-			this->matrix[r][c] = bytes[4*c+r];	
+	Block(uint8_t* bytes) {
+		for (int c = 0; c < 4; c++) {
+			for (int r = 0; r < 4; r++) {
+				this->matrix[r][c] = bytes[4*c+r];	
+			}
 		}
 	}
-  }
 
-  Block() {}
+	Block() {}
 };
 
 // Print the block for debugging
@@ -68,6 +83,13 @@ void dbg(const Block& b, const char* msg = nullptr) {
 		std::cout << "\n";
 	}
 	std::cout << "\n";
+}
+
+void dbg_word(uint32_t word) {
+	for(int i = 0; i < 4; i++)
+		std::cout << std::hex << std::setw(2) << std::setfill('0')
+			<< ((word >> (8*i)) & 0xff);
+	std::cout << " ";
 }
 
 void subBytes(Block& state) {
@@ -118,8 +140,6 @@ void addRoundKey(Block& state, const Block& key) {
 
 uint32_t subWord(uint32_t w) {
 	uint32_t sub = 0;
-	/* for(int i = 0; i < 4; i++)
-		sub = sub | SBOX[(w >> (i*8)) & 0xff] << (i*8); */
 	for(int i = 0; i < 4; i++) {
 		uint8_t byte = (w >> (i*8)) & 0xff;
 		uint8_t row = byte & 0x0f;
@@ -138,20 +158,45 @@ Block* keyExpansion(Block key, int Nr, int Nk) {
 
 	int i = 0;
 	while(i < Nk) {
-		w[i] = key.rows[i];	
+		w[i] = key.getCol(i);	
 		i++;
 	}
 
+	dbg_word(w[0]);
+	dbg_word(w[1]);
+	dbg_word(w[2]);
+	dbg_word(w[3]);
+
+	std::cout << "\n";
 	while(i <= 4*Nr+3) {
+		std::cout << std::dec <<  i << " ";
 		uint32_t temp = w[i-1];
+		dbg_word(temp);
+
 		if(i % Nk == 0) {
-			temp = subWord(rotWord(temp)) ^ RCON[i / Nk];
+			temp = rotWord(temp);
+			dbg_word(temp);
+
+			temp = subWord(temp);
+			dbg_word(temp);
+
+			//std::cout << std::hex << (i / Nk - 1) << " ";
+			dbg_word(((uint32_t*)RCON)[i / Nk - 1]);
+
+			temp = temp ^ ((uint32_t*)RCON)[i / Nk - 1];
+			dbg_word(temp);
+
+			//temp = subWord(rotWord(temp)) ^ RCON[i / Nk];
 		} else if(Nk > 6 && i % Nk == 4) {
 			temp = subWord(temp);	
+			std::cout << std::dec << "         ";
 		}
 
 		w[i] = w[i-Nk] ^ temp;
+		dbg_word(temp);
 		i++;
+
+		std::cout << std::endl;
 	}
 
 	return (Block*)w;
@@ -192,7 +237,7 @@ Block cipher(Block state, int Nr, Block* w) {
 
 using namespace AES;
 
-int main() {
+/* int main() {
 	uint8_t input_bytes[] = {
 		0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
 		0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
@@ -213,8 +258,23 @@ int main() {
 	dbg(encrypted, "RESULT");
 
 	
-}
+} */
 
+int main() {
+	uint8_t key_bytes[] = {
+		0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
+		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
+	}; 
+	Block key = (key_bytes);
+	dbg(key, "key");
+	Block* w = keyExpansion(key, 10, 4);
+	std::cout << "test" << std::hex << 0x2b7e1516 << "\n"; 
+	for(int i = 0; i < 10; i++) {
+		dbg(w[i], "hhh");
+	}
+
+
+}
 /* int main() {
 	uint8_t cum[] = {
 		0x19, 0xa0, 0x9a, 0xe9,
