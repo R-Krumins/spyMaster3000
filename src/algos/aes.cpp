@@ -223,7 +223,7 @@ Block cipher(Block state, int Nr, Block* w) {
   // Round 0 to Nr-1
   for (int round = 1; round < Nr; round++) {
 	std::cout << "---------------------------\n";
-	std::string msg = "Round " + std::to_string(round+1) + " start";
+	std::string msg = "Round " + std::to_string(round) + " start";
 	dbg(state, msg.c_str());
 
     subBytes(state);
@@ -239,10 +239,19 @@ Block cipher(Block state, int Nr, Block* w) {
 	dbg(w[round], "Round Key Value");
   }
 
-  // Last round
-  subBytes(state);
-  shiftRows(state);
-  addRoundKey(state, w[Nr - 1]);
+	// Last round
+	std::cout << "---------------------------\n";
+	std::cout << "LAST ROUND\n";
+	dbg(state);
+
+	subBytes(state);
+	dbg(state, "After Subytes");
+
+	shiftRows(state);
+	dbg(state, "After ShiftRows");
+
+	addRoundKey(state, w[Nr]);
+	dbg(w[Nr], "Round Key Value");
   return state;
 };
 
