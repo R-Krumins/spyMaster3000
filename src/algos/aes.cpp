@@ -111,19 +111,21 @@ void mixColumns(Block& state) {
 };
 
 void addRoundKey(Block& state, const Block& key) {
-	// std::cout << "----------------------\n";
-	// dbg(state);
 	for(int i = 0; i < 16; i++) {
 		state.bytes[i] = state.bytes[i] ^ key.bytes[i];
 	}
-	//dbg(key);
-	// dbg(state);
 };
 
 uint32_t subWord(uint32_t w) {
 	uint32_t sub = 0;
 	/* for(int i = 0; i < 4; i++)
 		sub = sub | SBOX[(w >> (i*8)) & 0xff] << (i*8); */
+	for(int i = 0; i < 4; i++) {
+		uint8_t byte = (w >> (i*8)) & 0xff;
+		uint8_t row = byte & 0x0f;
+		uint8_t col = (byte & 0xf0) >> 4;
+		sub = sub | (SBOX[row][col] << (i*8));
+	}
 	return sub;
 };
 
@@ -190,7 +192,7 @@ Block cipher(Block state, int Nr, Block* w) {
 
 using namespace AES;
 
-/* int main() {
+int main() {
 	uint8_t input_bytes[] = {
 		0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
 		0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
@@ -211,9 +213,9 @@ using namespace AES;
 	dbg(encrypted, "RESULT");
 
 	
-} */
+}
 
-int main() {
+/* int main() {
 	uint8_t cum[] = {
 		0x19, 0xa0, 0x9a, 0xe9,
 		0x3d, 0xf4, 0xc6, 0xf8,
@@ -237,6 +239,4 @@ int main() {
 	dbg(ASS, "ASS");
 	subBytes(ASS);
 	dbg(ASS, "ASS");
-
-	//std::cout << std::hex << static_cast<int>(SBOX[0x91]) << "\n";
-}
+} */
