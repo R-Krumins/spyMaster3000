@@ -228,45 +228,21 @@ Block* keyExpansion(Block key, int Nr, int Nk) {
 		i++;
 	}
 
-	dbg_word(w[0]);
-	dbg_word(w[1]);
-	dbg_word(w[2]);
-	dbg_word(w[3]);
-
-	std::cout << "\n";
 	while(i <= 4*Nr+3) {
-		std::cout << std::dec <<  i << " ";
 		uint32_t temp = w[i-1];
-		dbg_word(temp);
 
 		if(i % Nk == 0) {
 			temp = rotWord(temp);
-			dbg_word(temp);
-
 			temp = subWord(temp);
-			dbg_word(temp);
-
-			//std::cout << std::hex << (i / Nk - 1) << " ";
-			dbg_word(((uint32_t*)RCON)[i / Nk - 1]);
-
 			temp = temp ^ ((uint32_t*)RCON)[i / Nk - 1];
-			dbg_word(temp);
-
-			//temp = subWord(rotWord(temp)) ^ RCON[i / Nk];
 		} else if(Nk > 6 && i % Nk == 4) {
 			temp = subWord(temp);	
-			std::cout << std::dec << "         ";
 		}
 		
-		dbg_word(w[i-Nk]);
 		w[i] = w[i-Nk] ^ temp;
-
-		dbg_word(w[i]);
 		i++;
-
-		std::cout << std::endl;
 	}
-	
+	//TODO: Elimate the need fot this ugly thing
 	Block* block_w = new Block[Nr+1];
 	uint8_t* bytes_w = (uint8_t*)w;
 	for(int i = 0; i < Nr+1; i++) {
@@ -274,200 +250,77 @@ Block* keyExpansion(Block key, int Nr, int Nk) {
 	}
 	delete[] w;
 	return block_w;
-	//return (Block*)w;
 };
 
 Block cipher(Block state, int Nr, Block* w) {
+	// Pre-round
+	addRoundKey(state, w[0]);
 
-  // Pre-round
-	dbg(state, "pre-round before");
-	dbg(w[0], "pre-round w");
-  addRoundKey(state, w[0]);
-	dbg(state, "pre-round after");
-
-
-  // Round 0 to Nr-1
-  for (int round = 1; round < Nr; round++) {
-	std::cout << "---------------------------\n";
-	std::string msg = "Round " + std::to_string(round) + " start";
-	dbg(state, msg.c_str());
-
-    subBytes(state);
-	dbg(state, "After Subytes");
-
-    shiftRows(state);
-	dbg(state, "After ShiftRows");
-
-    mixColumns(state);
-	dbg(state, "After MixColumns");
-
-    addRoundKey(state, w[round]);
-	dbg(w[round], "Round Key Value");
-  }
+	// Round 0 to Nr-1
+	for (int round = 1; round < Nr; round++) {
+		subBytes(state);
+		shiftRows(state);
+		mixColumns(state);
+		addRoundKey(state, w[round]);
+	}
 
 	// Last round
-	std::cout << "---------------------------\n";
-	std::cout << "LAST ROUND\n";
-	dbg(state);
-
 	subBytes(state);
-	dbg(state, "After Subytes");
-
 	shiftRows(state);
-	dbg(state, "After ShiftRows");
-
 	addRoundKey(state, w[Nr]);
-	dbg(w[Nr], "Round Key Value");
-  return state;
+
+	return state;
 };
 
 Block invCipher(Block state, int Nr, Block* w) {
+	// Pre-round
+	addRoundKey(state, w[Nr]);
 
-  // Pre-round
-	dbg(state, "pre-round before");
-	dbg(w[0], "pre-round w");
-  addRoundKey(state, w[Nr]);
-	dbg(state, "pre-round after");
-
-
-  // Round 0 to Nr-1
-  for (int round = Nr - 1; round > 0; round--) {
-	std::cout << "---------------------------\n";
-	std::string msg = "Round " + std::to_string(round) + " start";
-	dbg(state, msg.c_str());
-
-    invShiftRows(state);
-	dbg(state, "After Inv ShiftRows");
-
-    invSubBytes(state);
-	dbg(state, "After Inv Subytes");
-
-
-    addRoundKey(state, w[round]);
-	dbg(w[round], "Round Key Value");
-	dbg(state, "After mix with key");
-
-    invMixColumns(state);
-	dbg(state, "After MixColumns");
-
-  }
+	// Round 0 to Nr-1
+	for (int round = Nr - 1; round > 0; round--) {
+		invShiftRows(state);
+		invSubBytes(state);
+		addRoundKey(state, w[round]);
+		invMixColumns(state);
+	}
 
 	// Last round
-	std::cout << "---------------------------\n";
-	std::cout << "LAST ROUND\n";
-	dbg(state);
-
 	invShiftRows(state);
-	dbg(state, "After Inv ShiftRows");
-
 	invSubBytes(state);
-	dbg(state, "After Inv Subytes");
-
-
 	addRoundKey(state, w[0]);
-	dbg(w[0], "Round Key Value");
-  return state;
+
+	return state;
 };
 
+Block encrypt(std::string input, std::string key) {
+	int Nr = 10;
+	int Nk = 4;
+	Block blockInput(input);	
+	Block blockKey(key);	
+	Block* w = keyExpansion(blockKey,Nr, Nk);
+	return cipher(blockInput, Nr, w);
+}
+
+Block decrypt(Block input, std::string key) {
+	int Nr = 10;
+	int Nk = 4;
+	Block blockKey(key);	
+	Block* w = keyExpansion(blockKey,Nr, Nk);
+	return invCipher(input, Nr, w);
+}
 }
 
 using namespace AES;
-
-/* int main() {
-	uint8_t input_bytes[] = {
-		0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
-		0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
-	};
-	uint8_t key_bytes[] = {
-		0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
-		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
-	}; 
-
-	Block input(input_bytes);
-	Block key(key_bytes);
-
-	dbg(input, "input");
-	dbg(key, "key");
-
-	Block* w = keyExpansion(key, 10, 4);
-	Block encrypted = cipher(input, 10, w);
-
-	dbg(encrypted, "RESULT");
-	dbg_word(w[1].rows[0]);
-	dbg_word(w[1].rows[1]);
-	dbg_word(w[1].rows[2]);
-	dbg_word(w[1].rows[3]);
-
-	
-} */
-
 int main() {
-	// DECRYPTION
-	uint8_t input_bytes[] = {
-		0x39, 0x25, 0x84, 0x1d, 0x02, 0xdc, 0x09, 0xfb,
-		0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a, 0x0b, 0x32
-	};
-	uint8_t key_bytes[] = {
-		0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
-		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
-	}; 
+	std::string input = "hello world yes!";
+	std::string key =   "superDuperSecret";
 
-	Block input(input_bytes);
-	Block key(key_bytes);
-
-	dbg(input, "input");
-	dbg(key, "key");
-
-	Block* w = keyExpansion(key, 10, 4);
-	Block encrypted = invCipher(input, 10, w);
-
-	dbg(encrypted, "RESULT");
-	dbg_word(w[1].rows[0]);
-	dbg_word(w[1].rows[1]);
-	dbg_word(w[1].rows[2]);
-	dbg_word(w[1].rows[3]);
-
+	Block encrypted = encrypt(input, key);
 	
+	Block decrypted = decrypt(encrypted, key);
+	char* decrypted_str = (char*)&decrypted;
+	decrypted_str[16] = '\0';
+
+	dbg(encrypted, "ENCRYPTED");
+	std::cout << "DECRYPTED: " << decrypted_str << "\n";
 }
-
-/* int main() {
-	uint8_t key_bytes[] = {
-		0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
-		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
-	}; 
-	Block key = (key_bytes);
-	dbg(key, "key");
-	Block* w = keyExpansion(key, 10, 4);
-	std::cout << "test" << std::hex << 0x2b7e1516 << "\n"; 
-	for(int i = 0; i < 10; i++) {
-		dbg(w[i], "hhh");
-	}
-
-
-} */
-
-/* int main() {
-	uint8_t cum[] = {
-		0x19, 0xa0, 0x9a, 0xe9,
-		0x3d, 0xf4, 0xc6, 0xf8,
-		0xe3, 0xe2, 0x8d, 0x48,
-		0xbe, 0x2b, 0x2a, 0x08,
-	};
-
-	uint8_t ass[] = {
-		0x26, 0x3d, 0xe8, 0xfd,
-		0x0e, 0x41, 0x64, 0xd2,
-		0x2e, 0xb7, 0x72, 0x8b,
-		0x17, 0x7d, 0xa9, 0x25,
-	};
-	Block CUM(cum);
-	Block ASS(ass);
-
-	dbg(CUM, "CUM");
-	subBytes(CUM);
-	dbg(CUM, "CUM");
-
-	dbg(ASS, "ASS");
-	subBytes(ASS);
-	dbg(ASS, "ASS");
-} */
