@@ -32,14 +32,14 @@ const uint8_t SBOX[16][16] = {
 // of x86 GOD DAMN ENDIAN FLIPPING
 const uint8_t RCON[] = {
 	0x01, 0x00, 0x00, 0x00, 
-	0x20, 0x00, 0x00, 0x00,
 	0x02, 0x00, 0x00, 0x00, 
-	0x40, 0x00, 0x00, 0x00,
 	0x04, 0x00, 0x00, 0x00, 
-	0x80, 0x00, 0x00, 0x00,
 	0x08, 0x00, 0x00, 0x00, 
-	0x1b, 0x00, 0x00, 0x00,
 	0x10, 0x00, 0x00, 0x00, 
+	0x20, 0x00, 0x00, 0x00,
+	0x40, 0x00, 0x00, 0x00,
+	0x80, 0x00, 0x00, 0x00,
+	0x1b, 0x00, 0x00, 0x00,
 	0x36, 0x00, 0x00, 0x00
 };
 
@@ -191,24 +191,37 @@ Block* keyExpansion(Block key, int Nr, int Nk) {
 			temp = subWord(temp);	
 			std::cout << std::dec << "         ";
 		}
-
+		
+		dbg_word(w[i-Nk]);
 		w[i] = w[i-Nk] ^ temp;
-		dbg_word(temp);
+
+		dbg_word(w[i]);
 		i++;
 
 		std::cout << std::endl;
 	}
-
-	return (Block*)w;
+	
+	Block* block_w = new Block[Nr+1];
+	uint8_t* bytes_w = (uint8_t*)w;
+	for(int i = 0; i < Nr+1; i++) {
+		block_w[i] = Block(bytes_w+(i*16));	
+	}
+	delete[] w;
+	return block_w;
+	//return (Block*)w;
 };
 
 Block cipher(Block state, int Nr, Block* w) {
 
   // Pre-round
+	dbg(state, "pre-round before");
+	dbg(w[0], "pre-round w");
   addRoundKey(state, w[0]);
+	dbg(state, "pre-round after");
+
 
   // Round 0 to Nr-1
-  for (int round = 0; round < Nr - 1; round++) {
+  for (int round = 1; round < Nr; round++) {
 	std::cout << "---------------------------\n";
 	std::string msg = "Round " + std::to_string(round+1) + " start";
 	dbg(state, msg.c_str());
@@ -237,7 +250,7 @@ Block cipher(Block state, int Nr, Block* w) {
 
 using namespace AES;
 
-/* int main() {
+int main() {
 	uint8_t input_bytes[] = {
 		0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
 		0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34
@@ -250,17 +263,22 @@ using namespace AES;
 	Block input(input_bytes);
 	Block key(key_bytes);
 
+	dbg(input, "input");
+	dbg(key, "key");
+
 	Block* w = keyExpansion(key, 10, 4);
 	Block encrypted = cipher(input, 10, w);
 
-	// dbg(input, "input");
-	// dbg(key, "key");
 	dbg(encrypted, "RESULT");
+	dbg_word(w[1].rows[0]);
+	dbg_word(w[1].rows[1]);
+	dbg_word(w[1].rows[2]);
+	dbg_word(w[1].rows[3]);
 
 	
-} */
+}
 
-int main() {
+/* int main() {
 	uint8_t key_bytes[] = {
 		0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
 		0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
@@ -274,7 +292,8 @@ int main() {
 	}
 
 
-}
+} */
+
 /* int main() {
 	uint8_t cum[] = {
 		0x19, 0xa0, 0x9a, 0xe9,
