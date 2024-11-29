@@ -61,7 +61,7 @@ const uint8_t RCON[] = {
 
 
 // Print the block for debugging
-void dbg(const Block& b, const char* msg = nullptr) {
+void dbg(const AESblock& b, const char* msg = nullptr) {
 	if(msg)
 		std::cout << "[" << msg << "]\n"; 
 	for (int i = 0; i < 4; ++i) {
@@ -81,7 +81,7 @@ void dbg_word(uint32_t word) {
 	std::cout << " ";
 }
 
-void subBytes(Block& state) {
+void subBytes(AESblock& state) {
 	for (int i = 0; i < 16; i++) {
 		uint8_t row = state.bytes[i] & 0x0f;
 		uint8_t col = (state.bytes[i] & 0xf0) >> 4;
@@ -89,7 +89,7 @@ void subBytes(Block& state) {
 	}
 };
 
-void invSubBytes(Block& state) {
+void invSubBytes(AESblock& state) {
 	for (int i = 0; i < 16; i++) {
 		uint8_t row = state.bytes[i] & 0x0f;
 		uint8_t col = (state.bytes[i] & 0xf0) >> 4;
@@ -97,14 +97,14 @@ void invSubBytes(Block& state) {
 	}
 };
 
-void shiftRows(Block& state) {
+void shiftRows(AESblock& state) {
 	//TODO: Replace with rotWord()
 	state.rows[1] = (state.rows[1] >> 8) | (state.rows[1] << 24);	
 	state.rows[2] = (state.rows[2] >> 16) | (state.rows[2] << 16);	
 	state.rows[3] = (state.rows[3] >> 24) | (state.rows[3] << 8);	
 };
 
-void invShiftRows(Block& state) {
+void invShiftRows(AESblock& state) {
 	//TODO: Replace with rotWord()
 	state.rows[1] = (state.rows[1] << 8) | (state.rows[1] >> 24);	
 	state.rows[2] = (state.rows[2] << 16) | (state.rows[2] >> 16);	
@@ -133,7 +133,7 @@ uint8_t gfMult(uint8_t a, uint8_t b) {
 	return result;
 }
 
-void mixColumns(Block& state) {
+void mixColumns(AESblock& state) {
 	uint8_t s0, s1, s2, s3;
 	for(int c = 0; c < 4; c++) {
 		s0 = state.matrix[0][c];
@@ -149,7 +149,7 @@ void mixColumns(Block& state) {
 };
 
 
-void invMixColumns(Block& state) {
+void invMixColumns(AESblock& state) {
 	uint8_t s0, s1, s2, s3;
 	for(int c = 0; c < 4; c++) {
 		s0 = state.matrix[0][c];
@@ -168,7 +168,7 @@ void invMixColumns(Block& state) {
 	}
 };
 
-void addRoundKey(Block& state, const Block& key) {
+void addRoundKey(AESblock& state, const AESblock& key) {
 	for(int i = 0; i < 16; i++) {
 		state.bytes[i] = state.bytes[i] ^ key.bytes[i];
 	}
@@ -189,7 +189,7 @@ uint32_t rotWord(uint32_t w) {
 	return w = (w >> 8) | (w << 24);	
 };
 
-Block* keyExpansion(Block key, int Nr, int Nk) {
+AESblock* keyExpansion(AESblock key, int Nr, int Nk) {
 	uint32_t* w = new uint32_t[4*(Nr+1)];
 
 	int i = 0;
@@ -213,16 +213,16 @@ Block* keyExpansion(Block key, int Nr, int Nk) {
 		i++;
 	}
 	//TODO: Elimate the need fot this ugly thing
-	Block* block_w = new Block[Nr+1];
+	AESblock* block_w = new AESblock[Nr+1];
 	uint8_t* bytes_w = (uint8_t*)w;
 	for(int i = 0; i < Nr+1; i++) {
-		block_w[i] = Block(bytes_w+(i*16));	
+		block_w[i] = AESblock(bytes_w+(i*16));	
 	}
 	delete[] w;
 	return block_w;
 };
 
-Block cipher(Block state, int Nr, Block* w) {
+AESblock cipher(AESblock state, int Nr, AESblock* w) {
 	// Pre-round
 	addRoundKey(state, w[0]);
 
@@ -242,7 +242,7 @@ Block cipher(Block state, int Nr, Block* w) {
 	return state;
 };
 
-Block invCipher(Block state, int Nr, Block* w) {
+AESblock invCipher(AESblock state, int Nr, AESblock* w) {
 	// Pre-round
 	addRoundKey(state, w[Nr]);
 
@@ -265,10 +265,10 @@ Block invCipher(Block state, int Nr, Block* w) {
 std::string encrypt(std::string input, std::string key) {
 	int Nr = 10;
 	int Nk = 4;
-	Block blockInput(input);	
-	Block blockKey(key);	
-	Block* w = keyExpansion(blockKey,Nr, Nk);
-	Block blockOutput = cipher(blockInput, Nr, w);
+	AESblock blockInput(input);	
+	AESblock blockKey(key);	
+	AESblock* w = keyExpansion(blockKey,Nr, Nk);
+	AESblock blockOutput = cipher(blockInput, Nr, w);
 	std::string output(reinterpret_cast<char*>(&blockOutput), 16);
 	return output;
 }
@@ -276,10 +276,10 @@ std::string encrypt(std::string input, std::string key) {
 std::string decrypt(std::string input, std::string key) {
 	int Nr = 10;
 	int Nk = 4;
-	Block blockInput(input);	
-	Block blockKey(key);	
-	Block* w = keyExpansion(blockKey,Nr, Nk);
-	Block blockOutput = invCipher(blockInput, Nr, w);
+	AESblock blockInput(input);	
+	AESblock blockKey(key);	
+	AESblock* w = keyExpansion(blockKey,Nr, Nk);
+	AESblock blockOutput = invCipher(blockInput, Nr, w);
 	std::string output(reinterpret_cast<char*>(&blockOutput), 16);
 	return output;
 }
