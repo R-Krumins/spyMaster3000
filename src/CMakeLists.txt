@@ -1,13 +1,13 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/algos)
 include_directories(${CMAKE_SOURCE_DIR}/src/util)
 
-set(SOURCES
-  main.cpp
-  algos/des.cpp
-  algos/caeser.cpp
-  algos/playfair.cpp
+add_library(core
+  lib.cpp
   algos/aes.cpp
-  util/utility.cpp
-  util/args.cpp
 )
-add_executable(spymaster ${SOURCES})
+
+add_executable(spymaster
+  main.cpp
+)
+
+target_link_libraries(spymaster core)

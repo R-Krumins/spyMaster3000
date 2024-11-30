@@ -1,5 +1,4 @@
 #include <cmath>
-#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <map>
@@ -7,8 +6,7 @@
 
 struct AlgoArgs {
 	Algo selectedAlgo;
-	uint8_t* key = nullptr;
-	int keySize = 0;
+	std::string key;
 	std::string input;
 };
 
@@ -21,24 +19,22 @@ public:
 		args.selectedAlgo = _selectedAlgo; 
 	}
 
-	void setKey(std::string keyStr) {
-		bool isInvalidKeySize = keyStr.length() != spec.keySize 
-			&& spec.keySize != -1; // -1 means infinite
+	void setKey(std::string _key) {
+		bool isInvalidKeySize = _key.length() != spec.keyBitSize / 8 && spec.keyBitSize != -1; // -1 means infinite
 		if(isInvalidKeySize) {
-			std::string msg = std::string(spec.name) + " key lenght must be " + std::to_string(spec.keySize);  
+			std::string msg = std::string(spec.name) + " key lenght must be " + std::to_string(spec.keyBitSize);  
 			throw std::invalid_argument(msg);
 		}
 
-		args.key = (uint8_t*)keyStr.data();
-		args.keySize = keyStr.length();
+		args.key = _key;
 	}
 
-	void setInput_PlainText(std::string _input) {
+	void setInputAsPlainText(std::string _input) {
 		args.input = _input;
 	}
 
 	AlgoArgs build() {
-		if(args.key == nullptr) throw "Key is not given";
+		if(args.key.empty()) throw "Key is not given";
 		if(args.input.empty()) throw "Input is not given";
 		return args;
 	}
