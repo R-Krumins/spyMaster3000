@@ -1,4 +1,4 @@
-#include "lib.h"
+#include "core/lib.h"
 #include <iostream>
 
 int main() {
