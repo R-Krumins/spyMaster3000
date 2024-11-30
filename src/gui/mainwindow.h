@@ -18,11 +18,12 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    AlgoArgsBuilder builder;
 
 private slots:
-    void onInputGiven(AlgoArgsBuilder builder);
-    void onKeyGiven(AlgoArgsBuilder builder);
-    void onEncryptBtnClicked(AlgoArgsBuilder builder);
-    void onDecryptBtnClicked(AlgoArgsBuilder builder);
+    void onInputGiven();
+    void onKeyGiven();
+    void onEncryptBtnClicked();
+    void onDecryptBtnClicked();
 };
 #endif // MAINWINDOW_H

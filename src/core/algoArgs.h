@@ -1,5 +1,4 @@
 #include <cmath>
-#include <stdexcept>
 #include <string>
 #include <map>
 #include "spymaster.h"
@@ -22,8 +21,7 @@ public:
 	void setKey(std::string _key) {
 		bool isInvalidKeySize = _key.length() != spec.keyBitSize / 8 && spec.keyBitSize != -1; // -1 means infinite
 		if(isInvalidKeySize) {
-			std::string msg = std::string(spec.name) + " key lenght must be " + std::to_string(spec.keyBitSize);  
-			throw std::invalid_argument(msg);
+			throw std::string(spec.name) + " key lenght must be " + std::to_string(spec.keyBitSize); 
 		}
 
 		args.key = _key;
@@ -34,8 +32,8 @@ public:
 	}
 
 	AlgoArgs build() {
-		if(args.key.empty()) throw "Key is not given";
-		if(args.input.empty()) throw "Input is not given";
+		if(args.key.empty()) throw std::string("Key is not given");
+		if(args.input.empty()) throw std::string("Input is not given");
 		return args;
 	}
 };
