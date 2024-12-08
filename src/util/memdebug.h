@@ -42,7 +42,7 @@ public:
 		}
 
 		for(int i = 0; i < size; i++) {
-			print(arr[i], nullptr, reverseEndian, base);
+			print(arr[i]);
 		}
 	}
 

@@ -87,6 +87,8 @@ const uint8_t  _k[64][4] = {
     {0xc6, 0x71, 0x78, 0xf2},
 };
 
+MemDebugger<word> mem("bin");
+
 word* K = (word*)_k;
 
 /* void padMsg(std::string msg) {
@@ -119,9 +121,9 @@ void padMsg(std::string msg) {
 
     int* ptr2 = (int*)(M + N);
     ptr2 -= 1;
-    // must swap (mirror) bits cuz the spec says so
-    // *ptr2 = __builtin_bswap32(l);
-    *ptr2 = l;
+    //must swap (mirror) bits cuz the spec says so
+    *ptr2 = __builtin_bswap32(l);
+    //*ptr2 = l;
 }
 
 word ch(word x, word y, word z) { return (x & y) ^ (x & z); }
@@ -136,10 +138,18 @@ word smallSigma1(word x) { return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10); }
 void prepareMsgSchedule(word* W, block* m) {
     memcpy(W, *m, sizeof(block));
     for(int t = 16; t < 64; t++) {
-        /* if(t == 17) {
-            util::printBits(smallSigma1(W[t-2]), "smallSigma1 W15");
-            util::printBits(W[t-2], "W15");
-        } */
+        if(t == 18) {
+            mem.print(W[t-16], "W1");
+            mem.print(W[t-15], "W2");
+            mem.print(smallSigma0(W[t-15]), "sm0 W2");
+            mem.print(W[t-7], "W10");
+            mem.print(W[t-2], "W15");
+            mem.print(W[t-2], "W15");
+            mem.print(rotr(W[t-2], 17), "rotr17 W15");
+            mem.print(rotr(W[t-2], 19), "rotr19 W15");
+            mem.print(W[t-2] << 10, "shiftr 10 W15");
+            mem.print(smallSigma1(W[t-2]), "sm1 W15");
+        }
         W[t] =  W[t-16] + smallSigma0(W[t-15]) + W[t-7] + smallSigma1(W[t-2]);
     }    
 }
@@ -225,7 +235,6 @@ int main() {
     word W[64];
     prepareMsgSchedule(W, &M[0]);
 
-    MemDebugger<word> mem("hex");
 
     for(int i = 0; i < 64; i++) {
         std::cout << "W" << i << "\n";
