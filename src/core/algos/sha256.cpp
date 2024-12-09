@@ -86,14 +86,13 @@ void prepMsgSchedule(word* W, byte* M) {
 	}
 }
 
-std::array<uint8_t, 32> hash(std::string input) {
+std::string hash(std::string input) {
 	//preprocessing
 	pad(input);
 	byte* blocks = (byte*)input.data();
 	int blockCount = input.size() / 64;
 
-	std::array<uint8_t, 32> digest;
-	word* H = (word*)digest.data();
+	word H[8];
 	memcpy(H, H0, 8*4);
 
 	//hash computation
@@ -125,7 +124,7 @@ std::array<uint8_t, 32> hash(std::string input) {
         H[7] += h;
 	}
 
-	return digest;
+	return std::string((char*)H, 32);
 }
 
 }
