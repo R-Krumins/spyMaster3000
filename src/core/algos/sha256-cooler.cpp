@@ -9,7 +9,7 @@ typedef uint32_t word;
 typedef uint8_t byte;
 
 
-MemDebugger<word> mem("hex");
+MemDebugger<word> mem("hex", true);
 
 word rotr(word x, byte n) { 
 	return (x >> n) | (x  << (32 - n)); 
@@ -20,7 +20,7 @@ word rotl(word x, byte n) {
 }
 
 word ch(word x, word y, word z) {
-	return (x & y) ^ (x & z); 
+	return (x & y) ^ (~x & z); 
 }
 
 word maj(word x, word y, word z) {
@@ -43,14 +43,18 @@ word sigma1(word x) {
 	return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10); 
 }
 
-const word H0[] = {
-	0x6a09e667, 0xbb67ae85,
-	0x3c6ef372, 0xa54ff53a,
-	0x510e527f, 0x9b05688c,
-	0x1f83d9ab, 0x5be0cd19,
+const word H0[8] = {
+	0x6a09e667, 
+	0xbb67ae85,
+	0x3c6ef372,
+	0xa54ff53a,
+	0x510e527f,
+	0x9b05688c,
+	0x1f83d9ab,
+	0x5be0cd19,
 };
 
-const word K[] = {
+const word K[64] = {
 	0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
 	0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
 	0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -94,7 +98,7 @@ void hash(std::string input, word* H) {
 	byte* blocks = (byte*)input.data();
 	int blockCount = input.size() / 64;
 
-	memcpy(H, H0, 8);
+	memcpy(H, H0, 8*4);
 
 	//hash computation
 	for(int i = 0; i < blockCount; i++) {
@@ -104,6 +108,13 @@ void hash(std::string input, word* H) {
 
 
 		for(int t = 0; t < 64; t++) {
+			if(t == 0) {
+				mem.print(h, "h");
+				mem.print(SIGMA1(e), "SIGMA1(e)");
+				mem.print(ch(e,f,g), "ch(e,f,g)");
+				mem.print(K[t], "K[t]");
+				mem.print(W[t], "W[t]");
+			}
             word T1 = h + SIGMA1(e) + ch(e,f,g) + K[t] + W[t];
             word T2 = SIGMA0(a) + maj(a,b,c);
             h = g;
