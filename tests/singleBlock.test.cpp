@@ -39,3 +39,12 @@ TEST(SingleBlock, des) {
 	std::string expected = util::hexToASCII("2169773ddd170f08");
 	ASSERT_EQ(encrypted, expected);
 }
+
+TEST(SingleBlock, tdes_3key) {
+	std::string input = "0123abcd";
+	std::string key = "mySuperDuperMegaSecretKe";
+	std::string encrypted = tdes_3key::encrypt(input, key);
+
+	std::string expected = util::hexToASCII("4547b56557c40eb3");
+	ASSERT_EQ(encrypted, expected);
+}

@@ -4,7 +4,6 @@
 #include <cstring>
 #include "des.h"
 
-namespace des {
 typedef uint64_t word;
 typedef char byte; 
 
@@ -59,7 +58,7 @@ void f(word& R, word& L, word* keys, int round, bool encrypt) {
 	f(R, L, keys, round, encrypt);
 }
 
-word des(word text, word key, bool encrypt) {
+word cipher(word text, word key, bool encrypt) {
 	// generate R and L of the plain text
 	text = permutate(text, initialPermTable, 64, 64);
 	word R = text & 0xFFFFFFFF;
@@ -82,14 +81,6 @@ word des(word text, word key, bool encrypt) {
 	return result;
 }
 
-word tripleDes(word text, word key1, word key2, bool encrypt) {
-	word step1 = des(text, key1, encrypt);
-	word step2 = des(step1, key2, !encrypt);
-	word step3 = des(step2, key1, encrypt);
-
-	return step3;
-}
-
 word toWord(const std::string& str) {
     word result = 0;
     std::memcpy(&result, str.data(), 8);
@@ -101,28 +92,77 @@ std::string toString(word value) {
     return std::string(reinterpret_cast<char*>(&result), 8);
 }
 
-std::string cipher(std::string input, std::string key, bool encrypt) {
+std::string tripleDES(std::string _input, std::string _key, int keyCount, bool encrypt) {
+	assert(keyCount == 2 || keyCount == 3);
+
+	word input = toWord(_input);
+
+	word key1 = toWord(_key.substr(0, 8));
+	word key2 = toWord(_key.substr(8, 8));
+	word key3 = keyCount == 2 ? key1 : toWord(_key.substr(16, 8));
+
+	word step1 = cipher(input, key1, encrypt);
+	word step2 = cipher(step1, key2, !encrypt);
+	word step3 = cipher(step2, key3, encrypt);
+
+	return toString(step3);
+}
+
+namespace des {
+std::string encrypt(std::string input, std::string key) {
 	assert(input.length() == 8);
 	assert(key.length() == 8);
 
 	word inputWord = toWord(input);
 	word keyWord = toWord(key);
-
-	word output = des(inputWord, keyWord, encrypt);
+	word output = cipher(inputWord, keyWord, true);
 
 	return toString(output);
 }
 
+std::string decrypt(std::string input, std::string key) {
+	assert(input.length() == 8);
+	assert(key.length() == 8);
+
+	word inputWord = toWord(input);
+	word keyWord = toWord(key);
+	word output = cipher(inputWord, keyWord, false);
+
+	return toString(output);
+}
+}
+
+namespace tdes_2key {
 std::string encrypt(std::string input, std::string key) {
-	return cipher(input, key, true);
+	assert(input.length() == 8);
+	assert(key.length() == 16);
+
+	return tripleDES(input, key, 2, true);
 }
 
 std::string decrypt(std::string input, std::string key) {
-	return cipher(input, key, false);
+	assert(input.length() == 8);
+	assert(key.length() == 16);
+
+	return tripleDES(input, key, 2, false);
+}
 }
 
+namespace tdes_3key {
+std::string encrypt(std::string input, std::string key) {
+	assert(input.length() == 8);
+	assert(key.length() == 24);
+
+	return tripleDES(input, key, 3, true);
 }
 
+std::string decrypt(std::string input, std::string key) {
+	assert(input.length() == 8);
+	assert(key.length() == 24);
+
+	return tripleDES(input, key, 3, false);
+}
+}
 /* using namespace des;
 #include "../../util/util.cpp"
 int main() {
