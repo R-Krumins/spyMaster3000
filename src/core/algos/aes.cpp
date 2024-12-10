@@ -78,7 +78,12 @@ union Block {
 
 	Block(std::string text) {
 		assert(text.length() == 16);
-		std::memcpy(this, text.data(), 16);
+		uint8_t* bytes = (uint8_t*)text.data();
+		for (int c = 0; c < 4; c++) {
+			for (int r = 0; r < 4; r++) {
+				this->matrix[r][c] = bytes[4*c+r];	
+			}
+		}
 	}
 
 	Block(uint8_t* bytes) {
@@ -87,6 +92,16 @@ union Block {
 				this->matrix[r][c] = bytes[4*c+r];	
 			}
 		}
+	}
+
+	std::string toString() {
+		std::string output;
+		for (int c = 0; c < 4; c++) {
+			for (int r = 0; r < 4; r++) {
+				output.push_back(this->matrix[r][c]);
+			}
+		}
+		return output;
 	}
 
 	Block() {}
@@ -303,8 +318,7 @@ std::string encrypt(std::string input, std::string key) {
 	Block blockKey(key);	
 	Block* w = keyExpansion(blockKey,Nr, Nk);
 	Block blockOutput = cipher(blockInput, Nr, w);
-	std::string output(reinterpret_cast<char*>(&blockOutput), 16);
-	return output;
+	return blockOutput.toString();
 }
 
 std::string decrypt(std::string input, std::string key) {
@@ -316,45 +330,6 @@ std::string decrypt(std::string input, std::string key) {
 	Block blockKey(key);	
 	Block* w = keyExpansion(blockKey,Nr, Nk);
 	Block blockOutput = invCipher(blockInput, Nr, w);
-	std::string output(reinterpret_cast<char*>(&blockOutput), 16);
-	return output;
+	return blockOutput.toString();
 }
-}
-
-using namespace aes;
-#include "../../util/memdebug.h"
-int main() {
-	unsigned char expectedBytes[16] = {
-		0x39, 0x25, 0x84, 0x1d,
-		0x02, 0xdc, 0x09, 0xfb,
-		0xdc, 0x11, 0x85, 0x97,
-		0x19, 0x6a, 0x0b, 0x32
-	};
-
-	unsigned char keyBytes[16] = {
-		0x2b, 0x28, 0xab, 0x09,
-		0x7e, 0xae, 0xf7, 0xcf,
-		0x15, 0xd2, 0x15, 0x4f,
-		0x16, 0xa6, 0x88, 0x3c
-	};
-
-	unsigned char inputBytes[16] = {
-		0x32, 0x88, 0x31, 0xe0,
-		0x43, 0x5a, 0x31, 0x37,
-		0xf6, 0x30, 0x98, 0x07,
-		0xa8, 0x8d, 0xa2, 0x34,
-	};
-
-	Block input(inputBytes); 
-	Block key(keyBytes); 
-	Block expected(expectedBytes); 
-
-
-	Block* w = keyExpansion(key, 10, 4);
-	Block result = aes::cipher(input, 10, w);
-
-	MemDebugger<uint8_t> mem("hex");
-	mem.compareArray(result.bytes, expected.bytes, 16);
-
-
 }
