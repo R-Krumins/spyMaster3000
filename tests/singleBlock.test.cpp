@@ -31,11 +31,11 @@ TEST(SingleBlock, aes128_complex) {
 	ASSERT_EQ(decrypted, input);
 }
 
-TEST(SingleBlock, des_simple) {
-	std::string input = "1234abcd";
-	std::string key = "mySecret";
+TEST(SingleBlock, des) {
+	std::string input = "0123abcd";
+	std::string key = "mysecret";
 	std::string encrypted = des::encrypt(input, key);
 
-	std::string expected = util::hexToASCII("c3ab9b9e4a41914e81e54d71dc4a9496");
+	std::string expected = util::hexToASCII("2169773ddd170f08");
 	ASSERT_EQ(encrypted, expected);
 }

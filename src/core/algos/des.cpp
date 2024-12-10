@@ -2,9 +2,6 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
-#include <ios>
-#include <iostream>
-#include <string>
 #include "des.h"
 
 namespace des {
@@ -93,43 +90,41 @@ word tripleDes(word text, word key1, word key2, bool encrypt) {
 	return step3;
 }
 
-std::string encrypt(std::string input, std::string key) {
+word toWord(const std::string& str) {
+    word result = 0;
+    std::memcpy(&result, str.data(), 8);
+    return __builtin_bswap64(result);
+}
+
+std::string toString(word value) {
+    word result = __builtin_bswap64(value);
+    return std::string(reinterpret_cast<char*>(&result), 8);
+}
+
+std::string cipher(std::string input, std::string key, bool encrypt) {
 	assert(input.length() == 8);
 	assert(key.length() == 8);
 
-	word inputWord;
-	std::memcpy(&inputWord, input.data(), 8);
+	word inputWord = toWord(input);
+	word keyWord = toWord(key);
 
-	word keyWord;
-	std::memcpy(&keyWord, key.data(), 8);
+	word output = des(inputWord, keyWord, encrypt);
 
-	word output = des(inputWord, keyWord, true);
+	return toString(output);
+}
 
-	std::string outputStr(reinterpret_cast<char*>(&output), 8);
-	return outputStr;
+std::string encrypt(std::string input, std::string key) {
+	return cipher(input, key, true);
 }
 
 std::string decrypt(std::string input, std::string key) {
-	assert(input.length() == 8);
-	assert(key.length() == 8);
-
-	//word inputWord = (word)input.data();
-	//word keyWord = (word)key.data();
-	word inputWord;
-	std::memcpy(&inputWord, input.data(), 8);
-
-	word keyWord;
-	std::memcpy(&keyWord, key.data(), 8);
-
-	word output = des(inputWord, keyWord, false);
-
-	std::string outputStr(reinterpret_cast<char*>(&output), 8);
-	return outputStr;
+	return cipher(input, key, false);
 }
 
 }
 
 /* using namespace des;
+#include "../../util/util.cpp"
 int main() {
 	word input = 0x0123456789ABCDEF;
 	word key = 0x133457799BBCDFF1;
@@ -137,12 +132,12 @@ int main() {
 	std::cout << "Encrypted: " << std::hex << encrypted << std::endl;
 
 	word decrypted = des::des(encrypted, key, false);
-	std::cout << "Encrypted: " << std::hex << decrypted << std::endl;
+	std::cout << "Decrypted: " << std::hex << decrypted << std::endl;
 
 	std::string inputStr = "0123abcd";
 	std::string keyStr = "mysecret";
 	std::string encryptedStr = des::encrypt(inputStr, keyStr);
-	std::cout << "Encrypted: " << encryptedStr << std::endl;
+	std::cout << "Encrypted: " << util::strToHex(encryptedStr) << std::endl;
 
 	std::string decryptedStr = des::decrypt(encryptedStr, keyStr); 
 	std::cout << "Decrypted: " << decryptedStr << std::endl;
