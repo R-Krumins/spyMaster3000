@@ -38,6 +38,10 @@ TEST(SingleBlock, des) {
 
 	std::string expected = util::hexToASCII("2169773ddd170f08");
 	ASSERT_EQ(encrypted, expected);
+
+	std::string decrypted = des::decrypt(encrypted, key); 
+
+	ASSERT_EQ(decrypted, input);
 }
 
 TEST(SingleBlock, tdes_3key) {
@@ -47,4 +51,8 @@ TEST(SingleBlock, tdes_3key) {
 
 	std::string expected = util::hexToASCII("4547b56557c40eb3");
 	ASSERT_EQ(encrypted, expected);
+
+	std::string decrypted = tdes_3key::decrypt(encrypted, key); 
+
+	ASSERT_EQ(decrypted, input);
 }

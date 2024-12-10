@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 #include "des.h"
 
 typedef uint64_t word;
@@ -101,9 +102,19 @@ std::string tripleDES(std::string _input, std::string _key, int keyCount, bool e
 	word key2 = toWord(_key.substr(8, 8));
 	word key3 = keyCount == 2 ? key1 : toWord(_key.substr(16, 8));
 
-	word step1 = cipher(input, key1, encrypt);
-	word step2 = cipher(step1, key2, !encrypt);
-	word step3 = cipher(step2, key3, encrypt);
+	word step1, step2, step3;
+
+	if(encrypt || keyCount == 2) {
+		step1 = cipher(input, key1, encrypt);
+		step2 = cipher(step1, key2, !encrypt);
+		step3 = cipher(step2, key3, encrypt);
+	}
+	else {
+		step1 = cipher(input, key3, false);
+		step2 = cipher(step1, key2, true);
+		step3 = cipher(step2, key1, false);
+	}
+
 
 	return toString(step3);
 }
