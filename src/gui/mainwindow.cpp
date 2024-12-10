@@ -180,7 +180,7 @@ void MainWindow::onEncryptBtnClicked() {
 		return;
 	}
 	std::string encrypted = util::strToHex(spymaster::encryptText(args));
-	ui->output_textbox->insertPlainText(QString::fromStdString(encrypted));
+	ui->output_textbox->setPlainText(QString::fromStdString(encrypted));
 }
 
 void MainWindow::onDecryptBtnClicked() {
@@ -193,7 +193,7 @@ void MainWindow::onDecryptBtnClicked() {
 		return;
 	}
 	
-	std::string encrypted = spymaster::decryptText(args);
-	ui->output_textbox->insertPlainText(QString::fromStdString(encrypted));
+	std::string decrypted = spymaster::decryptText(args);
+	ui->output_textbox->setPlainText(QString::fromStdString(decrypted));
 }
 
